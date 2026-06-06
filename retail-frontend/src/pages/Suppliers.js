@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 
 export default function Suppliers() {
   const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [showAdd, setShowAdd]     = useState(false);
-  const [search, setSearch]       = useState('');
-  const [msg, setMsg]             = useState({ text:'', type:'' });
-  const [form, setForm]           = useState({ supplier_name:'', contact_person:'', phone:'', email:'', address:'' });
+  const [loading,   setLoading]   = useState(true);
+  const [showAdd,   setShowAdd]   = useState(false);
+  const [search,    setSearch]    = useState('');
+  const [msg,       setMsg]       = useState({ text:'', type:'' });
+  const [form,      setForm]      = useState({ supplier_name:'', contact_person:'', phone:'', email:'', address:'' });
+  const { user } = useAuth();
 
   const flash = (text, type='success') => { setMsg({text,type}); setTimeout(()=>setMsg({text:'',type:''}),3000); };
-
   const load = () => api.get('/suppliers').then(r => { setSuppliers(r.data); setLoading(false); });
   useEffect(() => { load(); }, []);
 
@@ -27,7 +28,8 @@ export default function Suppliers() {
 
   const filtered = suppliers.filter(s =>
     s.supplier_name.toLowerCase().includes(search.toLowerCase()) ||
-    (s.contact_person||'').toLowerCase().includes(search.toLowerCase())
+    (s.contact_person||'').toLowerCase().includes(search.toLowerCase()) ||
+    (s.categories||'').toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) return <div className="loading">Loading suppliers...</div>;
@@ -37,11 +39,13 @@ export default function Suppliers() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:4 }}>
         <div>
           <h1 className="page-title">Suppliers</h1>
-          <p className="page-sub">{suppliers.length} suppliers registered</p>
+          <p className="page-sub">{suppliers.length} suppliers — with product categories</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAdd(!showAdd)}>
-          {showAdd ? '✕ Cancel' : '+ Add Supplier'}
-        </button>
+        {user?.role !== 'cashier' && (
+          <button className="btn btn-primary" onClick={() => setShowAdd(!showAdd)}>
+            {showAdd ? '✕ Cancel' : '+ Add Supplier'}
+          </button>
+        )}
       </div>
 
       {msg.text && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
@@ -82,22 +86,49 @@ export default function Suppliers() {
         </div>
       )}
 
-      <input className="form-input" style={{ maxWidth:260, marginBottom:14 }}
-        placeholder="Search suppliers..." value={search} onChange={e => setSearch(e.target.value)} />
+      <input className="form-input" style={{ maxWidth:280, marginBottom:16 }}
+        placeholder="Search by name, contact, or category..."
+        value={search} onChange={e => setSearch(e.target.value)} />
 
       <div className="grid-3">
         {filtered.map(s => (
-          <div key={s.supplier_id} className="card">
-            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
-              <div style={{ width:40, height:40, borderRadius:10, background:'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🏭</div>
-              <div>
+          <div key={s.supplier_id} className="card" style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+              <div style={{ width:44, height:44, borderRadius:10, background:'#eff6ff',
+                display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                🏭
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontWeight:700, fontSize:14 }}>{s.supplier_name}</div>
-                <div style={{ color:'#64748b', fontSize:12 }}>{s.contact_person || 'No contact'}</div>
+                <div style={{ color:'#64748b', fontSize:12 }}>{s.contact_person || 'No contact listed'}</div>
+              </div>
+              <div style={{ background:'#eff6ff', color:'#2563eb', fontSize:11, fontWeight:700,
+                padding:'2px 8px', borderRadius:4, whiteSpace:'nowrap' }}>
+                {s.product_count} products
               </div>
             </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+
+            {/* Categories badge row */}
+            {s.categories ? (
+              <div>
+                <div style={{ fontSize:10, color:'#94a3b8', fontWeight:600, textTransform:'uppercase', letterSpacing:'.05em', marginBottom:4 }}>
+                  Supplies Categories
+                </div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                  {s.categories.split(', ').map(cat => (
+                    <span key={cat} className="tag" style={{ fontSize:10 }}>{cat}</span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ color:'#94a3b8', fontSize:12, fontStyle:'italic' }}>No products assigned yet</div>
+            )}
+
+            {/* Contact info */}
+            <div style={{ display:'flex', flexDirection:'column', gap:3, paddingTop:6, borderTop:'1px solid #f1f5f9' }}>
               {s.phone && <div style={{ fontSize:12, color:'#64748b' }}>📞 {s.phone}</div>}
-              {s.email && <div style={{ fontSize:12, color:'#2563eb' }}>✉️ {s.email}</div>}
+              {s.email && <div style={{ fontSize:12, color:'#2563eb', wordBreak:'break-all' }}>✉️ {s.email}</div>}
               {s.address && <div style={{ fontSize:12, color:'#64748b' }}>📍 {s.address}</div>}
             </div>
           </div>
