@@ -1,34 +1,61 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Sidebar    from './components/Sidebar';
-import Login      from './pages/Login';
-import Dashboard  from './pages/Dashboard';
-import Products   from './pages/Products';
-import Categories from './pages/Categories';
-import Suppliers  from './pages/Suppliers';
-import Sales      from './pages/Sales';
-import NewSale    from './pages/NewSale';
-import Customers  from './pages/Customers';
+import Sidebar          from './components/Sidebar';
+import Login            from './pages/Login';
+import AdminDashboard   from './pages/AdminDashboard';
+import ManagerDashboard from './pages/ManagerDashboard';
+import Products         from './pages/Products';
+import Categories       from './pages/Categories';
+import Suppliers        from './pages/Suppliers';
+import Sales            from './pages/Sales';
+import NewSale          from './pages/NewSale';
+import Customers        from './pages/Customers';
+import Employees        from './pages/Employees';
+import SalaryManagement from './pages/SalaryManagement';
+import AssignDuties     from './pages/AssignDuties';
 
-// Role guard component
+const PAGE_TITLES = {
+  '/':           { admin:'📊 Dashboard', manager:'📋 My Dashboard', cashier:'➕ New Sale' },
+  '/products':   'Products',
+  '/categories': 'Categories',
+  '/suppliers':  'Suppliers',
+  '/customers':  'Customers',
+  '/sales':      'Sales History',
+  '/new-sale':   'New Sale',
+  '/employees':  'Employees',
+  '/salary':     'Salary Management',
+  '/duties':     'Assign Duties',
+};
+
+// Redirects unauthorized users instead of blank page
 function RequireRole({ allowed, children }) {
   const { user } = useAuth();
-  if (!allowed.includes(user?.role)) return <Navigate to="/" replace />;
+  if (!allowed.includes(user?.role)) {
+    if (user?.role === 'cashier') return <Navigate to="/new-sale" replace />;
+    if (user?.role === 'manager') return <Navigate to="/" replace />;
+    return <Navigate to="/" replace />;
+  }
   return children;
 }
 
-const PAGE_TITLES = {
-  '/': '📊 Dashboard', '/products': '📦 Products', '/categories': '🏷️ Categories',
-  '/suppliers': '🏭 Suppliers', '/sales': '🧾 Sales History',
-  '/new-sale': '➕ New Sale', '/customers': '👥 Customers',
+const ROLE_STYLE = {
+  admin:   { bg:'#eff6ff', color:'#2563eb' },
+  manager: { bg:'#f0fdf4', color:'#16a34a' },
+  cashier: { bg:'#fff7ed', color:'#ea580c' },
 };
 
-function ProtectedLayout() {
+function Layout() {
   const { isLoggedIn, user } = useAuth();
+  const location = useLocation();
   if (!isLoggedIn) return <Navigate to="/login" replace />;
-  const path = window.location.pathname;
-  const title = PAGE_TITLES[path] || 'RetailMS';
+
+  const titleEntry = PAGE_TITLES[location.pathname];
+  const title = typeof titleEntry === 'object'
+    ? (titleEntry[user?.role] || 'RetailMS')
+    : (titleEntry || 'RetailMS');
+
+  const rs = ROLE_STYLE[user?.role] || {};
 
   return (
     <div className="layout">
@@ -40,47 +67,43 @@ function ProtectedLayout() {
             <span style={{ color:'#64748b', fontSize:13 }}>
               Welcome, <strong>{user?.username}</strong>
             </span>
-            <span style={{
-              background: user?.role==='admin'?'#eff6ff': user?.role==='manager'?'#f0fdf4':'#fff7ed',
-              color:      user?.role==='admin'?'#2563eb': user?.role==='manager'?'#16a34a':'#ea580c',
-              fontSize:11, padding:'2px 8px', borderRadius:4, fontWeight:600
-            }}>
+            <span style={{ background:rs.bg, color:rs.color, fontSize:11, padding:'2px 10px', borderRadius:4, fontWeight:600 }}>
               {user?.role?.toUpperCase()}
             </span>
           </div>
         </div>
+
         <Routes>
-          {/* Cashier can only access sales */}
+          {/* Home — role based */}
           <Route path="/" element={
-            <RequireRole allowed={['admin','manager']}>
-              <Dashboard />
-            </RequireRole>
+            user?.role === 'admin'   ? <AdminDashboard /> :
+            user?.role === 'manager' ? <ManagerDashboard /> :
+            <Navigate to="/new-sale" replace />
           } />
-          <Route path="/products" element={
-            <RequireRole allowed={['admin','manager']}>
-              <Products />
-            </RequireRole>
-          } />
-          <Route path="/categories" element={
-            <RequireRole allowed={['admin','manager']}>
-              <Categories />
-            </RequireRole>
-          } />
-          <Route path="/suppliers" element={
-            <RequireRole allowed={['admin','manager']}>
-              <Suppliers />
-            </RequireRole>
-          } />
-          <Route path="/customers" element={
-            <RequireRole allowed={['admin','manager']}>
-              <Customers />
-            </RequireRole>
-          } />
-          {/* Everyone can access sales */}
-          <Route path="/sales"    element={<Sales />} />
-          <Route path="/new-sale" element={<NewSale />} />
-          {/* Cashier default page */}
-          <Route path="*" element={<Navigate to="/new-sale" replace />} />
+
+          {/* Admin + Manager — inventory */}
+          <Route path="/products"   element={<RequireRole allowed={['admin','manager']}><Products /></RequireRole>} />
+          <Route path="/categories" element={<RequireRole allowed={['admin','manager']}><Categories /></RequireRole>} />
+          <Route path="/suppliers"  element={<RequireRole allowed={['admin','manager']}><Suppliers /></RequireRole>} />
+
+          {/* Admin + Manager — HR */}
+          <Route path="/employees"  element={<RequireRole allowed={['admin','manager']}><Employees /></RequireRole>} />
+
+          {/* Admin only */}
+          <Route path="/customers"  element={<RequireRole allowed={['admin']}><Customers /></RequireRole>} />
+          <Route path="/salary"     element={<RequireRole allowed={['admin']}><SalaryManagement /></RequireRole>} />
+
+          {/* Manager only */}
+          <Route path="/duties"     element={<RequireRole allowed={['manager']}><AssignDuties /></RequireRole>} />
+
+          {/* Everyone — sales */}
+          <Route path="/sales"      element={<Sales />} />
+
+          {/* Cashier + Manager — new sale */}
+          <Route path="/new-sale"   element={<RequireRole allowed={['cashier','manager']}><NewSale /></RequireRole>} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </div>
@@ -93,7 +116,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/*"     element={<ProtectedLayout />} />
+          <Route path="/*"     element={<Layout />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
