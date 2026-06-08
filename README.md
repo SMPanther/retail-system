@@ -1,48 +1,75 @@
 # 🏪 RetailMS — Retail Management System
 
-A full-stack web application for managing retail operations including inventory, sales, customers, and suppliers. Built as a Database Systems course project.
+A full-stack web application for managing retail store operations including inventory, sales, HR, supplier management, and financial analytics. Built as a Database Systems course project.
 
 ---
 
 ## 👥 Authors
 
-| Name | Role |
+| Name | Role No. |
 |---|---|
-| Muhammad Umer Iqbal | Full-Stack Development, Database Design |
-| Arslan Aman | Full-Stack Development, Database Design |
+| Muhammad Umer Iqbal | L1F24BSCS0601 |
+| Arslan Aman | — |
 
-**University:** University of Central Punjab (UCP), Lahore  
-**Course:** Database Systems  
-**Program:** BSCS
+**University:** University of Central Punjab (UCP), Lahore
+**Course:** Database Systems · Instructor: Muneeb Ali Muzaffar
+**Program:** BSCS · Spring 2026
 
 ---
 
 ## 🚀 Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Database | MySQL 8.0 |
-| DB Tool | MySQL Workbench |
-| Backend | Node.js + Express.js |
-| MySQL Driver | mysql2/promise |
-| Authentication | JWT (jsonwebtoken) |
-| Frontend | React 18 |
-| HTTP Client | Axios |
+| Layer | Technology | Purpose |
+|---|---|---|
+| Database | MySQL 8.0 | Relational data storage |
+| DB Tool | MySQL Workbench | Schema design and management |
+| Backend | Node.js + Express.js | REST API (port 5001) |
+| MySQL Driver | mysql2/promise | Connection pool + queries |
+| Auth | JWT (jsonwebtoken) | Token-based authentication |
+| Frontend | React 18 | User interface |
+| HTTP Client | Axios | API calls with JWT interceptor |
 
 ---
 
 ## ✨ Features
 
-- **Role-based access** — Admin, Manager, Cashier with different permissions
-- **Product management** — Add, restock (with supplier selection), delete products
-- **Live inventory** — Stock deducts automatically on every sale
-- **Low stock alerts** — Dashboard highlights products at or below reorder level
-- **Sales processing** — Cart-based sale system with transaction support
-- **Customer loyalty discount** — Registered customers get 5% off automatically
-- **Supplier management** — Suppliers labeled with their product categories
-- **Analytics dashboard** — Revenue by category, top products, top customers
-- **MySQL Views** — `vw_product_details`, `vw_sales_summary`, `vw_low_stock`, `vw_customer_spend`
-- **Stored Procedures** — `sp_process_sale`, `sp_add_sale_item`, `sp_restock_product`
+### Role-Based Access
+| Feature | Admin | Manager | Cashier |
+|---|---|---|---|
+| Dashboard (full analytics) | ✅ | ❌ | ❌ |
+| Manager Dashboard (staff + low stock) | ❌ | ✅ | ❌ |
+| Products / Inventory | ✅ | ✅ | ❌ |
+| New Sale | ❌ | ✅ | ✅ |
+| Sales History | ✅ | ✅ | ✅ |
+| Customers | ✅ | ❌ | ❌ |
+| Employees | ✅ | ✅ (view) | ❌ |
+| Assign Duties | ❌ | ✅ | ❌ |
+| Salary Management | ✅ | ❌ | ❌ |
+
+### Core Features
+- **Inventory Management** — Add, edit, restock products with cost/selling price tracking
+- **Live Stock Alerts** — Dashboard highlights products at or below reorder level
+- **Sales Processing** — Cart-based POS with automatic stock deduction
+- **Customer Loyalty Discount** — Registered customers get configurable % discount (editable by admin)
+- **Per-Product Discounts** — Set discount for all customers or extra for registered customers
+- **Store Budget** — Track deposits and spending; restock deducts from budget automatically
+- **Profit Analytics** — Revenue vs cost vs gross profit from `vw_profit_summary`
+- **Supplier Management** — Supplier cards with category labels and full purchase history
+- **HR Management** — Add employees, assign duties by shift, pay/deduct salaries
+- **Salary Guard** — Pay button disabled once an employee is paid for the current month
+- **Sales by Date** — Filter sales day by day with daily summary chart
+- **Customer History** — View all bills per registered customer with full item breakdown
+
+### Database Concepts
+- **Normalization** — 3NF across all tables
+- **Foreign Keys** — ON DELETE CASCADE / RESTRICT / SET NULL
+- **Views** — `vw_product_details`, `vw_sales_summary`, `vw_low_stock`, `vw_customer_spend`, `vw_daily_sales`, `vw_profit_summary`, `vw_budget_balance`, `vw_supplier_purchases`, `vw_employee_duties`, `vw_salary_summary`
+- **Stored Procedures** — `sp_process_sale`, `sp_add_sale_item`, `sp_restock_product`, `sp_assign_duty`, `sp_pay_salary`
+- **Transactions** — Atomic sale processing with rollback on failure
+- **JOINs** — INNER, LEFT JOIN across multiple tables
+- **Aggregates** — SUM(), COUNT(), AVG(), MAX(), GROUP BY, HAVING
+- **Subqueries** — Nested SELECT for above-average customer spend
+- **GROUP_CONCAT** — Supplier category labels
 
 ---
 
@@ -50,107 +77,82 @@ A full-stack web application for managing retail operations including inventory,
 
 ```
 retail-system/
-├── schema.sql                    ← MySQL schema, views, stored procedures, sample data
+├── schema.sql                      ← Base schema (run first)
+├── sql_budget_profit.sql           ← HR + Budget + Profit additions (run second)
 ├── README.md
 ├── retail-backend/
-│   ├── server.js                 ← Express entry point (port 5001)
-│   ├── .env                      ← DB credentials (not committed)
-│   ├── config/db.js              ← MySQL connection pool
-│   ├── middleware/auth.js        ← JWT verification
+│   ├── server.js                   ← Express entry point (port 5001)
+│   ├── .env                        ← DB credentials
+│   ├── config/db.js                ← MySQL connection pool
+│   ├── middleware/auth.js          ← JWT verification
 │   └── routes/
-│       ├── auth.js               ← Login
-│       ├── products.js           ← Product CRUD + restock
-│       ├── sales.js              ← Sale creation with discount logic
-│       ├── customers.js          ← Customer management
-│       ├── suppliers.js          ← Suppliers with category info
-│       ├── categories.js         ← Category management
-│       └── dashboard.js          ← Analytics + all views
+│       ├── auth.js                 ← Login
+│       ├── products.js             ← CRUD + restock + edit + discounts
+│       ├── sales.js                ← Sale creation + date filter
+│       ├── customers.js            ← Customers + history + discount setting
+│       ├── suppliers.js            ← Suppliers + purchase history
+│       ├── categories.js
+│       ├── employees.js            ← HR: employees, duties, salary
+│       ├── budget.js               ← Store budget + profit
+│       └── dashboard.js            ← Admin + Manager dashboards
 └── retail-frontend/
     └── src/
-        ├── App.js                ← Router + role guards
+        ├── App.js                  ← Router + role guards
         ├── context/AuthContext.js
-        ├── api/axios.js          ← Axios with JWT interceptor
-        ├── components/Sidebar.js ← Role-based navigation
+        ├── api/axios.js
+        ├── components/Sidebar.js   ← Role-based navigation
         └── pages/
             ├── Login.js
-            ├── Dashboard.js      ← Live stats + views
-            ├── Products.js       ← Inventory management
-            ├── NewSale.js        ← POS-style sale screen
-            ├── Sales.js          ← Sales history
-            ├── Customers.js      ← Customer list + loyalty info
-            ├── Suppliers.js      ← Supplier cards with categories
-            └── Categories.js     ← Category management
+            ├── AdminDashboard.js   ← Revenue, profit, budget, analytics
+            ├── ManagerDashboard.js ← Staff duties + low stock
+            ├── Products.js         ← Inventory + edit + restock
+            ├── NewSale.js          ← POS cart with live discount
+            ├── Sales.js            ← History + date filter
+            ├── Customers.js        ← List + history + discount setting
+            ├── Suppliers.js        ← Cards + purchase history
+            ├── Categories.js
+            ├── Employees.js        ← HR management
+            ├── SalaryManagement.js ← Pay + deduct + monthly guard
+            └── AssignDuties.js     ← Manager duty assignment
 ```
 
 ---
 
-## ⚙️ Setup & Installation
+## ⚙️ Setup
 
 ### Prerequisites
-- Node.js 20+
-- MySQL 8.0
-- MySQL Workbench
+- Node.js 20+, MySQL 8.0, MySQL Workbench
 
 ### Step 1 — Database
+```
 1. Open MySQL Workbench
-2. Open `schema.sql`
-3. Run the full script (`Ctrl+Shift+Enter`)
+2. Run schema.sql          (creates retail_db + all base tables + sample data)
+3. Run sql_budget_profit.sql  (adds HR, budget, profit tables + views + procedures)
+```
 
 ### Step 2 — Backend
 ```bash
 cd retail-backend
 npm install
-```
-
-Edit `.env`:
-```
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=retail_db
-JWT_SECRET=retail_secret_key
-PORT=5001
-```
-
-```bash
+# Edit .env: set DB_PASSWORD to your MySQL root password
 npm start
+# Test: http://localhost:5001/api/health
 ```
-
-Test: http://localhost:5001/api/health
 
 ### Step 3 — Frontend
 ```bash
 cd retail-frontend
 npm install
 npm start
+# Opens: http://localhost:3000
 ```
 
-Opens at: http://localhost:3000
-
----
-
-## 🔐 Login Credentials
-
-| Role | Username | Password | Access |
-|---|---|---|---|
-| Admin | `admin` | `admin123` | Full access — add/delete products, view all |
-| Manager | `manager` | `manager123` | Inventory + Sales + Customers |
-| Cashier | `cashier` | `cashier123` | New Sale + Sales History only |
-
----
-
-## 🗄️ Database Concepts Demonstrated
-
-- **Normalization** — Tables in 3NF
-- **Foreign Keys** — With ON DELETE CASCADE / RESTRICT / SET NULL
-- **Views** — `vw_product_details`, `vw_sales_summary`, `vw_low_stock`, `vw_customer_spend`
-- **Stored Procedures** — `sp_process_sale`, `sp_add_sale_item`, `sp_restock_product`
-- **Transactions** — Atomic sale processing with rollback on failure
-- **JOINs** — INNER JOIN, LEFT JOIN across multiple tables
-- **Aggregates** — SUM(), COUNT(), AVG(), GROUP BY, HAVING
-- **Subqueries** — Nested SELECT for above-average customer spend
-- **GROUP_CONCAT** — Supplier category labels
+### Login Credentials
+| Role | Username | Password |
+|---|---|---|
+| Admin | `admin` | `admin123` |
+| Manager | `manager` | `manager123` |
+| Cashier | `cashier` | `cashier123` |
 
 ---
 
